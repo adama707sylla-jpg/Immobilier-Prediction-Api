@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Estimateur Immobilier</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 2rem; }
+        .container { background: white; border-radius: 12px; padding: 2rem; width: 100%; max-width: 500px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        h1 { font-size: 22px; margin-bottom: 0.5rem; }
+        p { color: #666; font-size: 14px; margin-bottom: 1.5rem; }
+        .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+        .dot.offline { background: #ef4444; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 13px; color: #555; }
+        input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%; }
+        input:focus { outline: none; border-color: #3b82f6; }
+        .hint { font-size: 11px; color: #aaa; }
+        button { width: 100%; padding: 12px; background: #1a1a1a; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
+        button:hover { background: #333; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .result { display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.5rem; margin-top: 1rem; text-align: center; }
+        .result.show { display: block; }
+        .result-label { font-size: 13px; color: #16a34a; margin-bottom: 4px; }
+        .result-price { font-size: 36px; font-weight: 600; color: #15803d; }
+        .result-meta { font-size: 12px; color: #666; margin-top: 8px; }
+        .error { display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px; font-size: 13px; color: #dc2626; margin-top: 1rem; }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏠 Estimateur de Prix</h1>
+    <p>Renseignez les caractéristiques de la maison</p>
+
+    <div class="status">
+        <div class="dot" id="dot"></div>
+        <span id="status">Vérification de l'API...</span>
+    </div>
+
+    <div class="grid">
+        <div class="field">
+            <label>Surface habitable</label>
+            <input type="number" id="surface" value="1500" placeholder="ex: 1500" />
+            <span class="hint">en pieds carrés</span>
+        </div>
+        <div class="field">
+            <label>Qualité (1-10)</label>
+            <input type="number" id="qualite" value="7" min="1" max="10" />
+            <span class="hint">note générale</span>
+        </div>
+        <div class="field">
+            <label>Année construction</label>
+            <input type="number" id="annee" value="2005" />
+            <span class="hint">ex: 1990, 2010</span>
+        </div>
+        <div class="field">
+            <label>Surface sous-sol</label>
+            <input type="number" id="soussol" value="800" />
+            <span class="hint">en pieds carrés</span>
+        </div>
+        <div class="field">
+            <label>Places garage</label>
+            <input type="number" id="garage" value="2" min="0" max="5" />
+            <span class="hint">nombre de voitures</span>
+        </div>
+    </div>
+
+    <button id="btn" onclick="predict()">Estimer le prix</button>
+    <div class="error" id="error"></div>
+    <div class="result" id="result">
+        <div class="result-label">Prix estimé</div>
+        <div class="result-price" id="prix">—</div>
+        <div class="result-meta" id="meta"></div>
+    </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+
+async function checkStatus() {
+    try {
+        const r = await fetch(API + '/');
+        if (r.ok) {
+            document.getElementById('dot').className = 'dot';
+            document.getElementById('status').textContent = 'API connectée ✓';
+        } else throw new Error();
+    } catch {
+        document.getElementById('dot').className = 'dot offline';
+        document.getElementById('status').textContent = 'API hors ligne — lancez uvicorn';
+    }
+}
+
+async function predict() {
+    const btn = document.getElementById('btn');
+    const err = document.getElementById('error');
+    const res = document.getElementById('result');
+
+    err.className = 'error';
+    res.className = 'result';
+    btn.disabled = true;
+    btn.textContent = 'Calcul en cours...';
+
+    try {
+        const r = await fetch(API + '/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                GrLivArea: parseFloat(document.getElementById('surface').value),
+                OverallQual: parseInt(document.getElementById('qualite').value),
+                YearBuilt: parseInt(document.getElementById('annee').value),
+                TotalBsmtSF: parseFloat(document.getElementById('soussol').value),
+                GarageCars: parseInt(document.getElementById('garage').value)
+            })
+        });
+
+        const data = await r.json();
+        const prix = data.prediction || data.prix_predit;
+        document.getElementById('prix').textContent = '$' + Number(prix).toLocaleString('en-US', {minimumFractionDigits: 2});
+        document.getElementById('meta').textContent = `Surface: ${document.getElementById('surface').value} ft²  |  Qualité: ${document.getElementById('qualite').value}/10  |  Année: ${document.getElementById('annee').value}`;
+        res.className = 'result show';
+
+    } catch(e) {
+        err.textContent = 'Impossible de contacter l\'API. Vérifiez que uvicorn tourne.';
+        err.className = 'error show';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Estimer le prix';
+}
+
+checkStatus();
+</script>
+</body>
+</html>
