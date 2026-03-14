@@ -1,16 +1,17 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, create_model
 import joblib
 import pandas as pd
 import numpy as np
 from typing import Any
-from fastapi.middleware.cors import CORSMiddleware
 
-# ============================================================
-# CHANGE UNIQUEMENT CES 2 LIGNES POUR CHAQUE NOUVEAU PROJET
+# Charger le modele
 MODEL_PATH = "mon_modele_gradient_final.pkl"
 API_TITLE  = "API Prédiction Immobilière"
-# ============================================================
+
 
 # Charger le modèle
 model = joblib.load(MODEL_PATH)
@@ -46,13 +47,10 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def accueil():
-    return {
-        "message": f"{API_TITLE} opérationnelle !",
-        "features_attendues": features,
-        "nombre_features": len(features)
-    }
+    with open("interface.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 @app.get("/features")
 def voir_features():
