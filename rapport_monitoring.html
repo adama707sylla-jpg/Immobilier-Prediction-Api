@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitoring Immobilier</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f8f9fa; }
+        h1 { color: #2c3e50; }
+        h2 { color: #3498db; }
+        .card { background: white; padding: 20px; margin: 10px 0;
+                 border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .ok { color: green; font-weight: bold; }
+        .warn { color: orange; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #3498db; color: white; padding: 10px; }
+        td { padding: 8px; border-bottom: 1px solid #ddd; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>📊 Rapport Monitoring — Immobilier</h1>
+
+    <div class="card">
+        <h2>📁 Données</h2>
+        <p>Référence (train) : <b>1460 lignes</b></p>
+        <p>Production (test) : <b>1458 lignes</b></p>
+    </div>
+
+    <div class="card">
+        <h2>📈 Comparaison par feature</h2>
+        <table>
+            <tr>
+                <th>Feature</th>
+                <th>Moyenne Référence</th>
+                <th>Moyenne Production</th>
+                <th>Différence %</th>
+                <th>Statut</th>
+            </tr>
+            <tr><td>LotArea</td><td>10516.83</td><td>9819.68</td><td>6.6%</td><td class='ok'>✅ OK</td></tr><tr><td>OverallQual</td><td>6.10</td><td>6.08</td><td>0.3%</td><td class='ok'>✅ OK</td></tr><tr><td>GrLivArea</td><td>1515.46</td><td>1485.81</td><td>2.0%</td><td class='ok'>✅ OK</td></tr><tr><td>GarageCars</td><td>1.77</td><td>1.77</td><td>0.1%</td><td class='ok'>✅ OK</td></tr><tr><td>YearBuilt</td><td>1971.27</td><td>1971.39</td><td>0.0%</td><td class='ok'>✅ OK</td></tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -3,13 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, create_model
+from config import MODEL_PATH, PROJECT_NAME
 import joblib
 import pandas as pd
 import numpy as np
 from typing import Any
 
 # Charger le modele
-MODEL_PATH = "mon_modele_gradient_final.pkl"
+#MODEL_PATH = "mon_modele_gradient_final.pkl"
 API_TITLE  = "API Prédiction Immobilière"
 
 
@@ -18,17 +19,15 @@ model = joblib.load(MODEL_PATH)
 
 # Récupérer automatiquement les features du modèle
 def get_features():
-    # Récupère les noms de colonnes depuis le preprocesseur
     try:
-        feature_names = (
-            model.named_steps['preprocessor']
-            .transformers_[0][2].tolist() +
-            model.named_steps['preprocessor']
-            .transformers_[1][2].tolist()
-        )
-    except:
-        feature_names = []
-    return feature_names
+        # ColumnTransformer → columntransformer dans le pipeline
+        ct = model.named_steps['columntransformer']
+        num_cols = ct.transformers_[0][2]
+        cat_cols = ct.transformers_[1][2]
+        return list(num_cols) + list(cat_cols)
+    except Exception as e:
+        print(f"get_features error: {e}")
+        return []
 
 features = get_features()
 
