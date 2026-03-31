@@ -90,7 +90,7 @@ def predire(data: DynamicInput):
     # Prédire
     prediction = model.predict(df)[0]
 
-    # Adapter le résultat selon le type de modèle
+    # Adapter le résultat selon le type du modele
     if hasattr(model, 'classes_'):
         # Classification
         proba = model.predict_proba(df)[0].max()
@@ -106,7 +106,7 @@ def predire(data: DynamicInput):
         sauvegarder_prediction(data.dict(), round(float(prediction), 2))
         return {
             "prediction": round(float(prediction), 2),
-            "type": "regression"
+            "type": "regresion"
         }
     
 @app.get("/health")
