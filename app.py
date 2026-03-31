@@ -6,6 +6,9 @@ from pydantic import BaseModel, create_model
 from config import MODEL_PATH, PROJECT_NAME
 import joblib
 import pandas as pd
+import psycopg2
+import json
+from config import MODEL_PATH, PROJECT_NAME, DATABASE_URL
 import numpy as np
 from typing import Any
 
@@ -44,7 +47,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+def get_db():
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    except Exception as e:
+        print(f"DB connection error: {e}")
+        return None
 
+def sauvegarder_prediction(features_dict, prix):
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO predictions_immo (features, prix_predit) VALUES (%s, %s)",
+                (json.dumps(features_dict), prix)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB insert error: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 def accueil():
@@ -70,6 +94,7 @@ def predire(data: DynamicInput):
     if hasattr(model, 'classes_'):
         # Classification
         proba = model.predict_proba(df)[0].max()
+        
         return {
             "prediction": str(prediction),
             "confiance": round(float(proba), 4),
@@ -77,7 +102,21 @@ def predire(data: DynamicInput):
         }
     else:
         # Régression
+        prix = round(float(prediction), 2)
+        sauvegarder_prediction(data.dict(), round(float(prediction), 2))
         return {
             "prediction": round(float(prediction), 2),
             "type": "regression"
         }
+    
+@app.get("/health")
+def health():
+    conn = get_db()
+    db_ok = conn is not None
+    if conn:
+        conn.close()
+    return {
+        "status"      : "ok",
+        "model_loaded": model is not None,
+        "db_connected": db_ok
+    }  
