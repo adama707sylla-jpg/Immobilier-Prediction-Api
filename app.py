@@ -106,7 +106,7 @@ def predire(data: DynamicInput):
         sauvegarder_prediction(data.dict(), round(float(prediction), 2))
         return {
             "prediction": round(float(prediction), 2),
-            "type": "regresion"
+            "type": "regression"
         }
     
 @app.get("/health")
