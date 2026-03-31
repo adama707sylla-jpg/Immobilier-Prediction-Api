@@ -52,8 +52,13 @@ jobs:
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
-            docker stop nlp-api || true
-            docker rm nlp-api || true
+            docker stop ia-immobiliere || true
+            docker rm ia-immobiliere || true
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-            docker run -d -p 8000:8000 --name nlp-api \
+            docker run -d -p 8000:8000 --name ia-immobiliere \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e DB_PORT=${{ secrets.DB_PORT }} \
               718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
