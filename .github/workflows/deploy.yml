@@ -52,10 +52,10 @@ jobs:
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
-            docker stop ia-immobiliere || true
-            docker rm ia-immobiliere || true
+            docker stop ia-immo || true
+            docker rm ia-immo || true
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-            docker run -d -p 8001:8000 --name ia-immobiliere \
+            docker run -d -p 8001:8000 --name ia-immo \
               -e DB_HOST=${{ secrets.DB_HOST }} \
               -e DB_USER=${{ secrets.DB_USER }} \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
