@@ -62,3 +62,6 @@ jobs:
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
               718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+
+
+   
