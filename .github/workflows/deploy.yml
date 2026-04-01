@@ -54,7 +54,7 @@ jobs:
             docker rm ia-immo || true
 
             # 2. Nettoyer TOUT (Maintenant que l'image n'est plus utilisée, elle sera supprimée)
-            docker system prune -af
+            docker system prune -af --volumes
 
             # 3. Se connecter à ECR
             aws ecr get-login-password --region eu-west-3 | docker login \
