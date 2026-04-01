@@ -47,25 +47,26 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. Arrêt et suppression propre
+            # 1. On dégage tout proprement
             docker stop ia-immo || true
             docker rm ia-immo || true
-
-            # 2. Nettoyage complet (On ne garde aucune trace de l'ancienne image)
-            docker rmi 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest || true
             docker system prune -af
 
-            # 3. Login AWS sur l'EC2
+            # 2. Login ECR
             aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
 
-            # 4. Pull de l'image (On attend qu'il soit fini)
+            # 3. On tire l'image
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. Run direct (On écrit l'image en dur pour éviter les bugs de variables)
+            # 4. ASTUCE : On donne un nom local court à l'image qu'on vient de pull
+            docker tag 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest ia-immo-local
+
+            # 5. On lance le run sur le nom local (Docker ne peut pas le rater)
             docker run -d -p 8001:8000 --name ia-immo \
               -e DB_HOST=${{ secrets.DB_HOST }} \
               -e DB_USER=${{ secrets.DB_USER }} \
               -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
-              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+              ia-immo-local
+            
