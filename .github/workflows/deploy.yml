@@ -47,31 +47,25 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. Nettoyage des anciens conteneurs
+            # 1. Arrêt et suppression propre
             docker stop ia-immo || true
             docker rm ia-immo || true
 
-            # 2. Nettoyage des anciennes images pour libérer l'espace disque
+            # 2. Nettoyage complet (On ne garde aucune trace de l'ancienne image)
             docker rmi 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest || true
-            docker system prune -af --volumes
+            docker system prune -af
 
-            # 3. Authentification Docker sur l'EC2
-            aws ecr get-login-password --region eu-west-3 | docker login \
-              --username AWS \
-              --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
+            # 3. Login AWS sur l'EC2
+            aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
 
-            # 4. Téléchargement de l'image
+            # 4. Pull de l'image (On attend qu'il soit fini)
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. Récupération de l'ID de l'image (pour éviter l'erreur "No such image")
-            IMAGE_ID=$(docker images -q 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest)
-
-            # 6. Lancement du conteneur avec l'ID unique
+            # 5. Run direct (On écrit l'image en dur pour éviter les bugs de variables)
             docker run -d -p 8001:8000 --name ia-immo \
-              --pull never \
               -e DB_HOST=${{ secrets.DB_HOST }} \
               -e DB_USER=${{ secrets.DB_USER }} \
               -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
-              $IMAGE_ID
+              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
