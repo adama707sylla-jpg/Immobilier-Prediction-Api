@@ -40,15 +40,11 @@ jobs:
             ${{ secrets.ECR_REGISTRY }}/ia-immobiliere:latest
           docker push \
             ${{ secrets.ECR_REGISTRY }}/ia-immobiliere:latest
-
       - name: Deploy sur EC2
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT
-          script: |
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
             ECR=718100329950.dkr.ecr.eu-west-3.amazonaws.com
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS --password-stdin $ECR
@@ -56,15 +52,12 @@ jobs:
             docker rm ia-immo || true
             docker pull $ECR/ia-immobiliere:latest
             docker run -d -p 8001:8000 --name ia-immo \
-              -e DB_HOST=$DB_HOST \
-              -e DB_USER=$DB_USER \
-              -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=$DB_NAME \
-              -e DB_PORT=$DB_PORT \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e DB_PORT=${{ secrets.DB_PORT }} \
               $ECR/ia-immobiliere:latest
-        env:
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_PORT: ${{ secrets.DB_PORT }}
+          ENDSSH
+          rm key.pem    
+      
