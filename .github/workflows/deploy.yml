@@ -49,6 +49,9 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_DEFAULT_REGION=eu-west-3
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
@@ -62,6 +65,3 @@ jobs:
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
               718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-
-
-   
