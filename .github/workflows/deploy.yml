@@ -47,23 +47,26 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. On stoppe le conteneur s'il existe
+            # 1. Nettoyage des anciens conteneurs
             docker stop ia-immo || true
             docker rm ia-immo || true
 
-            # 2. Nettoyage de l'image locale existante et du cache
+            # 2. Nettoyage des anciennes images pour libérer l'espace disque
             docker rmi 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest || true
             docker system prune -af --volumes
 
-            # 3. Authentification à AWS ECR sur l'EC2
+            # 3. Authentification Docker sur l'EC2
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
 
-            # 4. On télécharge la nouvelle image toute fraîche
+            # 4. Téléchargement de l'image
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. On lance le conteneur final
+            # 5. Récupération de l'ID de l'image (pour éviter l'erreur "No such image")
+            IMAGE_ID=$(docker images -q 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest)
+
+            # 6. Lancement du conteneur avec l'ID unique
             docker run -d -p 8001:8000 --name ia-immo \
               --pull never \
               -e DB_HOST=${{ secrets.DB_HOST }} \
@@ -71,4 +74,4 @@ jobs:
               -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
-              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+              $IMAGE_ID
