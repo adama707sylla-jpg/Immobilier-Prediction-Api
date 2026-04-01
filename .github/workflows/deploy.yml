@@ -41,7 +41,6 @@ jobs:
             718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
           docker push \
             718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-
       - name: Deploy sur EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -49,26 +48,28 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. Stopper et supprimer le conteneur existant (pour libérer l'image)
+            # 1. On arrête et supprime l'ancien conteneur pour libérer les ressources
             docker stop ia-immo || true
             docker rm ia-immo || true
 
-            # 2. Nettoyer TOUT (Maintenant que l'image n'est plus utilisée, elle sera supprimée)
+            # 2. Nettoyage agressif pour éviter l'erreur "No space left on device"
             docker system prune -af --volumes
 
-            # 3. Se connecter à ECR
+            # 3. Authentification à AWS ECR
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
 
-            # 4. Pull la nouvelle image (avec le max d'espace libre possible)
+            # 4. On télécharge la nouvelle image
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. Lancer le nouveau conteneur
+            # 5. Lancement avec "--pull never" pour éviter les erreurs d'accès au RUN
             docker run -d -p 8001:8000 --name ia-immo \
+              --pull never \
               -e DB_HOST=${{ secrets.DB_HOST }} \
               -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
-              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest    
+     
