@@ -27,59 +27,46 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
-
       - name: Login to ECR
         run: |
           aws ecr get-login-password --region eu-west-3 | docker login \
             --username AWS \
-            --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
+            --password-stdin ${{ secrets.ECR_REGISTRY }}
 
       - name: Build and push to ECR
         run: |
           docker build -t ia-immobiliere .
           docker tag ia-immobiliere:latest \
-            718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+            ${{ secrets.ECR_REGISTRY }}/ia-immobiliere:latest
           docker push \
-            718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+            ${{ secrets.ECR_REGISTRY }}/ia-immobiliere:latest
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region eu-west-3 | docker login \
-            --username AWS \
-            --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com
-
-      - name: Build and push to ECR
-        run: |
-          docker build -t ia-immobiliere .
-          docker tag ia-immobiliere:latest \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-          docker push \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
       - name: Deploy sur EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT
+          envs: ECR_REGISTRY,DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT
           script: |
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
-              --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
+              --password-stdin $ECR_REGISTRY
             docker stop ia-immo || true
             docker rm ia-immo || true
-            docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+            docker pull $ECR_REGISTRY/ia-immobiliere:latest
             docker run -d -p 8001:8000 --name ia-immo \
               -e DB_HOST=$DB_HOST \
               -e DB_USER=$DB_USER \
               -e DB_PASSWORD=$DB_PASSWORD \
               -e DB_NAME=$DB_NAME \
               -e DB_PORT=$DB_PORT \
-              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+              $ECR_REGISTRY/ia-immobiliere:latest
         env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-      
+          DB_PORT: ${{ secrets.DB_PORT }}  
+     
