@@ -37,21 +37,9 @@ jobs:
       - name: Build and push to ECR
         run: |
           docker build -t ia-immobiliere .
-          docker tag ia-immobiliere:latest \
-            718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-          docker push \
-            718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-      
+          docker tag ia-immobiliere:latest 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+          docker push 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. Lancement final avec les variables d'environnement
-            docker run -d -p 8001:8000 --name ia-immo \
-              --pull never \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_PORT=${{ secrets.DB_PORT }} \
-              $IMAGE_ID
       - name: Deploy sur EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -63,11 +51,11 @@ jobs:
             docker stop ia-immo || true
             docker rm ia-immo || true
 
-            # 2. ON SUPPRIME L'IMAGE LOCALE EXISTANTE (Pour forcer un pull propre)
+            # 2. Nettoyage de l'image locale existante et du cache
             docker rmi 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest || true
             docker system prune -af --volumes
 
-            # 3. Authentification à AWS ECR
+            # 3. Authentification à AWS ECR sur l'EC2
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
@@ -75,7 +63,7 @@ jobs:
             # 4. On télécharge la nouvelle image toute fraîche
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
 
-            # 5. On lance le conteneur
+            # 5. On lance le conteneur final
             docker run -d -p 8001:8000 --name ia-immo \
               --pull never \
               -e DB_HOST=${{ secrets.DB_HOST }} \
@@ -83,4 +71,4 @@ jobs:
               -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_PORT=${{ secrets.DB_PORT }} \
-              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest        
+              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
