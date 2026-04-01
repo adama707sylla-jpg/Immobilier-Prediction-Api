@@ -49,13 +49,22 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker system prune -f
+            # 1. Stopper et supprimer le conteneur existant (pour libérer l'image)
+            docker stop ia-immo || true
+            docker rm ia-immo || true
+
+            # 2. Nettoyer TOUT (Maintenant que l'image n'est plus utilisée, elle sera supprimée)
+            docker system prune -af
+
+            # 3. Se connecter à ECR
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
               --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
-            docker stop ia-immo || true
-            docker rm ia-immo || true
+
+            # 4. Pull la nouvelle image (avec le max d'espace libre possible)
             docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+
+            # 5. Lancer le nouveau conteneur
             docker run -d -p 8001:8000 --name ia-immo \
               -e DB_HOST=${{ secrets.DB_HOST }} \
               -e DB_USER=${{ secrets.DB_USER }} \
