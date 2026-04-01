@@ -55,24 +55,31 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
           docker push \
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
-
       - name: Deploy sur EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT
           script: |
             aws ecr get-login-password --region eu-west-3 | docker login \
               --username AWS \
-              --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com
+              --password-stdin 718100329950.dkr.ecr.eu-west-3.amazonaws.com
             docker stop ia-immo || true
             docker rm ia-immo || true
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+            docker pull 718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
             docker run -d -p 8001:8000 --name ia-immo \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_PORT=${{ secrets.DB_PORT }} \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+              -e DB_HOST=$DB_HOST \
+              -e DB_USER=$DB_USER \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=$DB_NAME \
+              -e DB_PORT=$DB_PORT \
+              718100329950.dkr.ecr.eu-west-3.amazonaws.com/ia-immobiliere:latest
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+      
